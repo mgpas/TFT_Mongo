@@ -1,0 +1,14 @@
+[{
+  "_id": 30,
+  "total_partidas": 10,
+  "vitorias": 4,
+  "intervalo_tempo": 30,
+  "porcentagem_vitoria": 40
+},
+{
+  "_id": 40,
+  "total_partidas": 5,
+  "vitorias": 2,
+  "intervalo_tempo": 40,
+  "porcentagem_vitoria": 40
+}]

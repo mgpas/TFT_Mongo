@@ -1,0 +1,75 @@
+/* Estilos globais para centralizar a página */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+/* Estilos para o título */
+h1 {
+  margin-bottom: 30px;
+}
+
+/* Estilos para a navegação do botão Dicionário */
+.navigation {
+  margin-bottom: 20px;
+}
+
+/* Estilos para o botão Dicionário */
+.special {
+  margin-bottom: 10px; /* Espaço abaixo do botão Dicionário */
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  text-decoration: none;
+  border-radius: 25px;
+  border: none;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.special:hover {
+  background-color: #45a049;
+}
+
+/* Estilos de navegação em coluna */
+.navigation-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Estilos para a lista de navegação */
+.nav-list-row {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: row; /* Define a direção em linha */
+  gap: 15px; /* Espaço entre os botões */
+}
+
+/* Estilos para cada item da lista */
+.nav-item {
+  margin: 10px;
+}
+
+/* Estilos para os outros botões */
+.nav-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  text-decoration: none;
+  border-radius: 25px; /* Bordas arredondadas */
+  border: none;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+/* Botão ao passar o mouse */
+.nav-button:hover {
+  background-color: #45a049;
+}

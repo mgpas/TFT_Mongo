@@ -1,0 +1,848 @@
+-- Consulta 01
+  // Filtra partidas onde a unidade especificada está presente
+[
+  {
+    $match: {
+      $or: [
+        { unit_1: "TFT12_Jayce" },
+        { unit_2: "TFT12_Jayce" },
+        { unit_3: "TFT12_Jayce" },
+        { unit_4: "TFT12_Jayce" },
+        { unit_5: "TFT12_Jayce" },
+        { unit_6: "TFT12_Jayce" },
+        { unit_7: "TFT12_Jayce" },
+        { unit_8: "TFT12_Jayce" },
+        { unit_9: "TFT12_Jayce" },
+        { unit_10: "TFT12_Jayce" }
+      ]
+    }
+  },
+  // Lookup para obter informações da tabela info_partida com base em match_id e puuid
+  {
+    $lookup: {
+      from: "info_partida",
+      let: {
+        matchId: "$match_id",
+        puuid: "$puuid"
+      }, // Variáveis de ligação
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                {
+                  $eq: ["$match_id", "$$matchId"]
+                },
+                { $eq: ["$puuid", "$$puuid"] }
+              ]
+            }
+          }
+        }
+      ],
+      as: "info_partida"
+    }
+  },
+  { $unwind: "$info_partida" }, // Descompacta a array de info_partida
+
+  // Lookup para obter informações da tabela partidas (tempo de jogo) com base no match_id
+  {
+    $lookup: {
+      from: "partida",
+      localField: "match_id",
+      foreignField: "match_id",
+      as: "partida"
+    }
+  },
+  { $unwind: "$partida" }, // Descompacta a array de partidas
+
+  // Agrupa as partidas em intervalos de tempo (por game_length_minutes) e conta vitórias
+  {
+    $bucket: {
+      groupBy: "$partida.game_length_minutes", // Agrupa com base no tempo de jogo
+      boundaries: [0, 20, 30, 40, 50, 60], // Intervalos de tempo (ajustáveis)
+      default: "60+", // Agrupa partidas acima de 60 minutos
+      output: {
+        total_partidas: { $sum: 1 }, // Conta o total de partidas no intervalo
+        vitorias: {
+          $sum: {
+            $cond: [
+              {
+                $eq: [
+                  "$info_partida.placement",
+                  1
+                ]
+              },
+              1,
+              0
+            ] // Conta vitórias (placement = 1)
+          }
+        }
+      }
+    }
+  },
+  // Calcula a porcentagem de vitórias em cada intervalo de tempo
+  {
+    $project: {
+      intervalo_tempo: "$_id",
+      total_partidas: 1,
+      vitorias: 1,
+      porcentagem_vitoria: {
+        $cond: {
+          if: { $eq: ["$total_partidas", 0] }, // Evita divisão por zero
+          then: 0,
+          else: {
+            $multiply: [
+              {
+                $divide: [
+                  "$vitorias",
+                  "$total_partidas"
+                ]
+              },
+              100
+            ]
+          }
+        }
+      }
+    }
+  }
+]
+# Com Jayce retornou 
+[{
+  "_id": 30,
+  "total_partidas": 10,
+  "vitorias": 4,
+  "intervalo_tempo": 30,
+  "porcentagem_vitoria": 40
+},
+{
+  "_id": 40,
+  "total_partidas": 5,
+  "vitorias": 2,
+  "intervalo_tempo": 40,
+  "porcentagem_vitoria": 40
+}]
+
+#Com Norra retornou
+[{
+  "_id": 30,
+  "total_partidas": 4,
+  "vitorias": 2,
+  "intervalo_tempo": 30,
+  "porcentagem_vitoria": 50
+},
+{
+  "_id": 40,
+  "total_partidas": 2,
+  "vitorias": 1,
+  "intervalo_tempo": 40,
+  "porcentagem_vitoria": 50
+}]
+
+-- Consulta 02
+// Traits com mais de 10% de winrate nos intervalos temporais
+[
+  {
+    $match: {
+      $or: [
+        { trait_1: { $exists: true } },
+        { trait_2: { $exists: true } },
+        { trait_3: { $exists: true } },
+        { trait_4: { $exists: true } },
+        { trait_5: { $exists: true } },
+        { trait_6: { $exists: true } },
+        { trait_7: { $exists: true } },
+        { trait_8: { $exists: true } }
+      ]
+    }
+  },
+  {
+    $lookup: {
+      from: "info_partida", // Join com a coleção info_partida
+      localField: "puuid", // Campo de traits
+      foreignField: "puuid", // Campo de info_partida
+      as: "partida"
+    }
+  },
+  {
+    $unwind: "$partida" // Unwind no array partida
+  },
+  {
+    $lookup: {
+      from: "partida", // Join com a coleção partida
+      localField: "partida.match_id", // Campo de info_partida
+      foreignField: "match_id", // Campo de partida
+      as: "partidaDetails"
+    }
+  },
+  {
+    $unwind: "$partidaDetails" // Unwind no array partidaDetails
+  },
+  {
+    $project: {
+      traits: {
+        $filter: {
+          input: [
+            "$trait_1",
+            "$trait_2",
+            "$trait_3",
+            "$trait_4",
+            "$trait_5",
+            "$trait_6",
+            "$trait_7",
+            "$trait_8"
+          ],
+          as: "trait",
+          cond: { $ne: ["$$trait", null] } // Remove traits nulos
+        }
+      },
+      "partidaDetails.game_length_minutes": 1, // Pega a duração do jogo
+      "partida.placement": 1 // Pega o placement
+    }
+  },
+  {
+    $unwind: "$traits" // Unwind no array traits
+  },
+  {
+    $match: {
+      "partida.placement": 1 // Filtra para incluir apenas vitórias (placement = 1)
+    }
+  },
+  {
+    $bucket: {
+      // Bucket para criar intervalos de duração do jogo
+      groupBy:
+        "$partidaDetails.game_length_minutes",
+      boundaries: [0, 20, 30, 40, 50], // Define os intervalos de duração (em minutos)
+      default: "Mais de 50 minutos", // Categoria padrão para jogos com mais de 50 minutos
+      output: {
+        traits: { $push: "$traits" }, // Empurra os traits para cada intervalo
+        count: { $sum: 1 } // Conta o número de vitórias
+      }
+    }
+  },
+  {
+    $unwind: "$traits" // Unwind no array traits
+  },
+  {
+    $group: {
+      _id: { interval: "$_id", trait: "$traits" }, // Agrupa por trait e intervalo de duração do jogo
+      count: { $sum: 1 } // Conta as ocorrências de cada trait
+    }
+  },
+  {
+    $group: {
+      _id: "$_id.interval", // Agrupa por intervalo de duração
+      total: { $sum: "$count" }, // Conta o total de vitórias no intervalo
+      traits: {
+        $push: {
+          trait: "$_id.trait",
+          count: "$count"
+        }
+      } // Armazena os traits e suas contagens
+    }
+  },
+  {
+    $unwind: "$traits" // Unwind no array traits
+  },
+  {
+    $project: {
+      trait: "$traits.trait", // Projeta o trait
+      count: "$traits.count", // Projeta a contagem
+      totalMatches: "$total", // Projeta o total de partidas no intervalo
+      percentage: {
+        // Calcula a porcentagem de vitórias para cada trait
+        $multiply: [
+          {
+            $divide: ["$traits.count", "$total"]
+          },
+          100
+        ]
+      }
+    }
+  },
+  {
+    $match: {
+      // Filtra para incluir apenas traits com mais de 10% de vitórias
+      percentage: { $gt: 10 }
+    }
+  },
+  {
+    $sort: { percentage: -1 } // Ordena por porcentagem em ordem decrescente
+  }
+]
+# Retornou:
+[{
+  "_id": null,
+  "trait": "TFT12_Portal",
+  "count": 5,
+  "percentage": 12.5,
+  "otherTraits": [
+    {
+      "_id": null,
+      "trait": "TFT12_Shapeshifter",
+      "count": 5,
+      "percentage": 12.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Druid",
+      "count": 5,
+      "percentage": 12.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Explorer",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Scholar",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Vanguard",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Blaster",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Frost",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Mage",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Pyro",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Honeymancy",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Hunter",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Faerie",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Witchcraft",
+      "count": 1,
+      "percentage": 2.5
+    }
+  ]
+}]
+
+-- Consulta 03
+// O número de derrotas das unidades selecionadas em um determinado intervalo de tempo
+const unitCombo = ["TFT12_Ezreal", "TFT12_Ryze", "TFT12_Kassadin"];
+db.composicoes.aggregate([
+    {
+        $lookup: {
+            from: "info_partida", // Coleção para unir
+            localField: "match_id", // Campo na coleção de composições
+            foreignField: "match_id", // Campo na coleção de informações da partida
+            as: "info"
+        }
+    },
+    {
+        $unwind: "$info" // Desagrupar a coleção unida
+    },
+    {
+        $lookup: {
+            from: "partidas", // Segunda junção para pegar o game_length_minutes
+            localField: "match_id", // Campo na coleção de composições
+            foreignField: "match_id", // Campo na coleção de partidas
+            as: "partidaInfo"
+        }
+    },
+    {
+        $unwind: "$partidaInfo" // Desagrupar a segunda coleção unida
+    },
+    {
+        $match: {
+            "info.placement": { $gt: 4 }, // Considera como derrota se placement > 4
+            "partidaInfo.game_length_minutes": { $gt: 30 }, // Filtra partidas com mais de 30 minutos
+            $or: unitCombo.map((unit, index) => ({
+                [`unit_${index + 1}`]: unit // Filtra pelo combo de unidades
+            }))
+        }
+    },
+    {
+        $group: {
+            _id: null,
+            totalDerrotas: { $sum: 1 } // Contar o número total de derrotas
+        }
+    }
+]);
+# Retornou 48 derrotas
+
+-- Consulta 04
+// De acordo com a colocação dos 4 primeiros jogadores de cada partida
+// quais são os traits com a principal winrate
+[
+  {
+    $lookup: {
+      from: "info_partida", // Coleção que contém o placement
+      localField: "puuid", // Campo correspondente em traits
+      foreignField: "puuid", // Campo correspondente em info_partida
+      as: "info" // Nome do campo para armazenar o resultado do join
+    }
+  },
+  {
+    $unwind: "$info" // Desfaz o array info para criar um documento por info
+  },
+  {
+    $match: {
+      "info.placement": { $lte: 4 } // Filtra para jogadores nas posições 1 a 4
+    }
+  },
+  {
+    $project: {
+      traits: [
+        { $ifNull: ["$trait_1", null] },
+        { $ifNull: ["$trait_2", null] },
+        { $ifNull: ["$trait_3", null] },
+        { $ifNull: ["$trait_4", null] },
+        { $ifNull: ["$trait_5", null] },
+        { $ifNull: ["$trait_6", null] },
+        { $ifNull: ["$trait_7", null] },
+        { $ifNull: ["$trait_8", null] }
+      ],
+      placement: "$info.placement" // Inclui a posição do placement
+    }
+  },
+  {
+    $unwind: "$traits" // Desfaz o array traits para criar um documento por trait
+  },
+  {
+    $match: {
+      traits: { $ne: null } // Filtra traits que não são nulos
+    }
+  },
+  {
+    $group: {
+      _id: {
+        trait: "$traits", // Agrupa por trait
+        placement: "$placement" // Agrupa também por placement
+      },
+      totalCount: { $sum: 1 } // Conta o número de ocorrências de cada trait
+    }
+  },
+  {
+    $sort: { totalCount: -1 } // Ordena por contagem em ordem decrescente
+  },
+  {
+    $group: {
+      _id: "$_id.placement", // Agrupa por placement
+      bestTrait: { $first: "$_id.trait" }, // Pega a primeira trait (com maior contagem)
+      totalCount: { $first: "$totalCount" } // Mantém o totalCount para calcular porcentagem
+    }
+  },
+  {
+    $project: {
+      placement: "$_id", // Mantém o placement no resultado
+      bestTrait: 1, // Mantém a melhor trait no resultado
+      percentage: {
+        $multiply: [
+          { $divide: ["$totalCount", 8] }, // Calcula a porcentagem considerando 7 partidas
+          100
+        ]
+      }
+    }
+  }
+]
+# Retornou:
+[{
+  "_id": 3,
+  "bestTrait": "TFT12_Portal",
+  "placement": 3,
+  "percentage": 62.5
+},
+{
+  "_id": 2,
+  "bestTrait": "TFT12_Shapeshifter",
+  "placement": 2,
+  "percentage": 50
+},
+{
+  "_id": 1,
+  "bestTrait": "TFT12_Shapeshifter",
+  "placement": 1,
+  "percentage": 100
+},
+{
+  "_id": 4,
+  "bestTrait": "TFT12_Preserver",
+  "placement": 4,
+  "percentage": 100
+}]
+
+-- Consulta 05
+// As unidades que mais estiveram no top1 quando a partida durou menos de 40min
+[
+    {
+        $lookup: {
+            from: "info_partida",           // Coleção com informações da partida
+            localField: "puuid",            // Campo correspondente na tabela composicao
+            foreignField: "puuid",          // Campo correspondente na tabela info_partida
+            as: "info"                      // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$info"                   // Desfaz o array info para criar um documento por info
+    },
+    {
+        $lookup: {
+            from: "partida",                // Coleção com informações da partida
+            localField: "match_id",         // Campo correspondente na tabela composicao
+            foreignField: "match_id",       // Campo correspondente na tabela partida
+            as: "partida_info"              // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$partida_info"           // Desfaz o array partida_info para criar um documento por partida_info
+    },
+    {
+        $match: {
+            "info.placement": { $lte: 1 },  // Filtra para jogadores nas posições 1 a 4
+            "partida_info.game_length_minutes": { $lt: 40 } // Filtra para partidas com menos de 40 minutos
+        }
+    },
+    {
+        $project: {
+            units: [
+                { $ifNull: ["$unit_1", null] },
+                { $ifNull: ["$unit_2", null] },
+                { $ifNull: ["$unit_3", null] },
+                { $ifNull: ["$unit_4", null] },
+                { $ifNull: ["$unit_5", null] },
+                { $ifNull: ["$unit_6", null] },
+                { $ifNull: ["$unit_7", null] },
+                { $ifNull: ["$unit_8", null] },
+                { $ifNull: ["$unit_9", null] },
+                { $ifNull: ["$unit_10", null] }
+            ]
+        }
+    },
+    {
+        $unwind: "$units"                    // Desfaz o array de unidades para criar um documento por unidade
+    },
+    {
+        $match: {
+            units: { $ne: null }             // Filtra unidades que não são nulas
+        }
+    },
+    {
+        $group: {
+            _id: "$units",                   // Agrupa por unidade
+            count: { $sum: 1 }                // Conta o número de ocorrências de cada unidade
+        }
+    },
+    {
+        $sort: { count: -1 }                // Ordena por contagem em ordem decrescente
+    },
+    {
+        $limit: 3                            // Retorna apenas as 3 unidades mais frequentes
+    }
+]
+#Retornou:
+[{
+  "_id": "TFT12_Galio",
+  "count": 6
+},
+{
+  "_id": "TFT12_Taric",
+  "count": 5
+},
+{
+  "_id": "TFT12_Kassadin",
+  "count": 5
+}]
+
+-- Consulta 06
+// Retorna os principais componentes usados
+[
+  {
+    $project: {
+      allUnits: {
+        // Combina todas as traits em um array
+        $concatArrays: [
+          [
+            "$unit_1",
+            "$unit_2",
+            "$unit_3",
+            "$unit_4",
+            "$unit_5",
+            "$unit_6",
+            "$unit_7",
+            "$unit_8"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    $unwind: "$allUnits" // Desfaz o array allTraits para criar um documento por trait
+  },
+  {
+    $match: {
+      allUnits: { $ne: null } // Filtra traits que não são nulos
+    }
+  },
+  {
+    $group: {
+      _id: "$allUnits", // Agrupa por trait
+      count: { $sum: 1 } // Conta o número de ocorrências de cada trait
+    }
+  },
+  {
+    $sort: { count: -1 } // Ordena por contagem em ordem decrescente
+  },
+  {
+    $limit: 5 // Retorna apenas as 5 traits mais frequentes
+  }
+]
+#Retorno com traits:
+[{
+  "_id": "TFT12_Shapeshifter",
+  "count": 21
+},
+{
+  "_id": "TFT12_Vanguard",
+  "count": 14
+},
+{
+  "_id": "TFT12_Sugarcraft",
+  "count": 14
+},
+{
+  "_id": "TFT12_Portal",
+  "count": 14
+},
+{
+  "_id": "TFT12_Scholar",
+  "count": 13
+}]
+# Retorno com units
+[{
+  "_id": "TFT12_Galio",
+  "count": 22
+},
+{
+  "_id": "TFT12_Kassadin",
+  "count": 20
+},
+{
+  "_id": "TFT12_Jayce",
+  "count": 15
+},
+{
+  "_id": "TFT12_Zilean",
+  "count": 14
+},
+{
+  "_id": "TFT12_Jinx",
+  "count": 14
+}]
+
+-- Consulta 07
+// As composições de augments mais utilizadas no top4
+[
+    {
+        $lookup: {
+            from: "info_partida",           // Coleção com informações de partida
+            localField: "puuid",            // Campo correspondente na tabela composicao
+            foreignField: "puuid",          // Campo correspondente na tabela info_partida
+            as: "info"                      // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$info"                   // Desfaz o array info para criar um documento por info
+    },
+    {
+        $match: {
+            "info.placement": { $lte: 4 }   // Filtra para jogadores nas posições 1 a 4
+        }
+    },
+    {
+        $lookup: {
+            from: "augmentos",              // Coleção com augmentos
+            localField: "match_id",         // Campo correspondente na tabela composicao
+            foreignField: "match_id",       // Campo correspondente na tabela augmentos
+            as: "augments"                   // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$augments"                // Desfaz o array augments para criar um documento por augment
+    },
+    {
+        $group: {
+            _id: {
+                augment_1: "$augments.augment_1",
+                augment_2: "$augments.augment_2",
+                augment_3: "$augments.augment_3"
+            },
+            count: { $sum: 1                  // Conta o número de ocorrências de cada combinação de augments
+            }
+        }
+    },
+    {
+        $sort: { count: -1 }                 // Ordena por contagem em ordem decrescente
+    },
+    {
+        $limit: 3                             // Retorna apenas as 3 combinações mais frequentes
+    },
+    {
+        $project: {
+            augments: "$_id",                // Inclui as combinações de augments
+            count: 1                         // Inclui a contagem
+        }
+    }
+] 
+# Retorna:
+[{
+  "_id": {
+    "augment_1": "TFT9_Augment_YouHaveMySword",
+    "augment_2": "TFT9_Augment_ImpenetrableBulwark",
+    "augment_3": "TFT6_Augment_ItemGrabBag1"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT9_Augment_YouHaveMySword",
+    "augment_2": "TFT9_Augment_ImpenetrableBulwark",
+    "augment_3": "TFT6_Augment_ItemGrabBag1"
+  }
+},
+{
+  "_id": {
+    "augment_1": "TFT7_Augment_ClutteredMind",
+    "augment_2": "TFT_Augment_SpellcastersToolbox",
+    "augment_3": "TFT_Augment_ReinforcedRejuvenation2"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT7_Augment_ClutteredMind",
+    "augment_2": "TFT_Augment_SpellcastersToolbox",
+    "augment_3": "TFT_Augment_ReinforcedRejuvenation2"
+  }
+},
+{
+  "_id": {
+    "augment_1": "TFT9_Augment_YouHaveMyBow",
+    "augment_2": "TFT12_Augment_MultistrikerCrown",
+    "augment_3": "TFT9_Augment_BigGrabBag"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT9_Augment_YouHaveMyBow",
+    "augment_2": "TFT12_Augment_MultistrikerCrown",
+    "augment_3": "TFT9_Augment_BigGrabBag"
+  }
+}]
+
+-- Consulta 08
+// Colocação média de uma unidade dependendo do intervalo temporal
+[
+    {
+        $lookup: {
+            from: "info_partida",           // Coleção com informações de partida
+            localField: "puuid",            // Campo correspondente na tabela composicao
+            foreignField: "puuid",          // Campo correspondente na tabela info_partida
+            as: "info"                      // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$info"                   // Desfaz o array info para criar um documento por info
+    },
+    {
+        $lookup: {
+            from: "partida",                // Coleção com informações da partida
+            localField: "match_id",         // Campo correspondente na tabela composicao
+            foreignField: "match_id",       // Campo correspondente na tabela partida
+            as: "partida_info"              // Nome do campo para o resultado do join
+        }
+    },
+    {
+        $unwind: "$partida_info"           // Desfaz o array partida_info para criar um documento por partida_info
+    },
+    {
+        $match: {
+            $or: [
+                { unit_1: "TFT12_Galio" },
+                { unit_2: "TFT12_Galio" },
+                { unit_3: "TFT12_Galio" },
+                { unit_4: "TFT12_Galio" },
+                { unit_5: "TFT12_Galio" },
+                { unit_6: "TFT12_Galio" },
+                { unit_7: "TFT12_Galio" },
+                { unit_8: "TFT12_Galio" },
+                { unit_9: "TFT12_Galio" },
+                { unit_10: "TFT12_Galio" }
+            ]  // Filtra documentos onde a unidade Galio está presente
+        }
+    },
+    {
+        $group: {
+            _id: {
+                $cond: [
+                    { $lt: ["$partida_info.game_length_minutes", 20] }, // Intervalo 1: menos de 20 minutos
+                    "menos_20_min",
+                    {
+                        $cond: [
+                            { $lt: ["$partida_info.game_length_minutes", 40] }, // Intervalo 2: entre 20 e 40 minutos
+                            "20_a_40_min",
+                            "mais_40_min" // Intervalo 3: mais de 40 minutos
+                        ]
+                    }
+                ]
+            },
+            avg_placement: { $avg: "$info.placement" } // Calcula a colocação média
+        }
+    },
+    {
+        $project: {
+            interval: "$_id",                // Inclui o intervalo de tempo
+            avg_placement: 1                 // Inclui a colocação média
+        }
+    },
+    {
+        $sort: { interval: 1 }               // Ordena os resultados pelos intervalos
+    }
+]
+#Retornou:
+[{
+  "_id": "20_a_40_min",
+  "avg_placement": 4.346153846153846,
+  "interval": "20_a_40_min"
+},
+{
+  "_id": "mais_40_min",
+  "avg_placement": 4.533333333333333,
+  "interval": "mais_40_min"
+}]

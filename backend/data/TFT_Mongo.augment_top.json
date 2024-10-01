@@ -1,0 +1,39 @@
+[{
+  "_id": {
+    "augment_1": "TFT9_Augment_YouHaveMySword",
+    "augment_2": "TFT9_Augment_ImpenetrableBulwark",
+    "augment_3": "TFT6_Augment_ItemGrabBag1"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT9_Augment_YouHaveMySword",
+    "augment_2": "TFT9_Augment_ImpenetrableBulwark",
+    "augment_3": "TFT6_Augment_ItemGrabBag1"
+  }
+},
+{
+  "_id": {
+    "augment_1": "TFT7_Augment_ClutteredMind",
+    "augment_2": "TFT_Augment_SpellcastersToolbox",
+    "augment_3": "TFT_Augment_ReinforcedRejuvenation2"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT7_Augment_ClutteredMind",
+    "augment_2": "TFT_Augment_SpellcastersToolbox",
+    "augment_3": "TFT_Augment_ReinforcedRejuvenation2"
+  }
+},
+{
+  "_id": {
+    "augment_1": "TFT9_Augment_YouHaveMyBow",
+    "augment_2": "TFT12_Augment_MultistrikerCrown",
+    "augment_3": "TFT9_Augment_BigGrabBag"
+  },
+  "count": 8,
+  "augments": {
+    "augment_1": "TFT9_Augment_YouHaveMyBow",
+    "augment_2": "TFT12_Augment_MultistrikerCrown",
+    "augment_3": "TFT9_Augment_BigGrabBag"
+  }
+}]

@@ -1,0 +1,86 @@
+[{
+  "_id": null,
+  "trait": "TFT12_Portal",
+  "count": 5,
+  "percentage": 12.5,
+  "otherTraits": [
+    {
+      "_id": null,
+      "trait": "TFT12_Shapeshifter",
+      "count": 5,
+      "percentage": 12.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Druid",
+      "count": 5,
+      "percentage": 12.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Explorer",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Scholar",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Vanguard",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Blaster",
+      "count": 3,
+      "percentage": 7.5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Frost",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Mage",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Pyro",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Honeymancy",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Hunter",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Faerie",
+      "count": 2,
+      "percentage": 5
+    },
+    {
+      "_id": null,
+      "trait": "TFT12_Witchcraft",
+      "count": 1,
+      "percentage": 2.5
+    }
+  ]
+}]

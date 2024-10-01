@@ -1,0 +1,24 @@
+[{
+  "_id": 3,
+  "bestTrait": "TFT12_Portal",
+  "placement": 3,
+  "percentage": 62.5
+},
+{
+  "_id": 2,
+  "bestTrait": "TFT12_Shapeshifter",
+  "placement": 2,
+  "percentage": 50
+},
+{
+  "_id": 1,
+  "bestTrait": "TFT12_Shapeshifter",
+  "placement": 1,
+  "percentage": 100
+},
+{
+  "_id": 4,
+  "bestTrait": "TFT12_Preserver",
+  "placement": 4,
+  "percentage": 100
+}]

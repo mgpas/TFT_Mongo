@@ -1,0 +1,35 @@
+[{
+  "_id": 40,
+  "trait": "TFT12_Shapeshifter",
+  "count": 3,
+  "totalMatches": 11,
+  "percentage": 27.27272727272727
+},
+{
+  "_id": 40,
+  "trait": "TFT12_Witchcraft",
+  "count": 2,
+  "totalMatches": 11,
+  "percentage": 18.181818181818183
+},
+{
+  "_id": 30,
+  "trait": "TFT12_Shapeshifter",
+  "count": 5,
+  "totalMatches": 40,
+  "percentage": 12.5
+},
+{
+  "_id": 30,
+  "trait": "TFT12_Druid",
+  "count": 5,
+  "totalMatches": 40,
+  "percentage": 12.5
+},
+{
+  "_id": 30,
+  "trait": "TFT12_Portal",
+  "count": 5,
+  "totalMatches": 40,
+  "percentage": 12.5
+}]
